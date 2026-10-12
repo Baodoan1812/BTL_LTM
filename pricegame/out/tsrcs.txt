@@ -1,0 +1,2 @@
+src/test/java/server/logic/GameRoomTest.java
+src/test/java/server/logic/ScoreCalculatorTest.java
