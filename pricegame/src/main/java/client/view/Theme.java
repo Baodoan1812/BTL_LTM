@@ -52,7 +52,7 @@ public final class Theme {
 
     /** Thẻ trắng bo góc có đổ bóng nhẹ. */
     public static class Card extends JPanel {
-        private final Color fill;
+        private Color fill;
 
         public Card() { this(Color.WHITE); }
 
@@ -61,6 +61,8 @@ public final class Theme {
             setOpaque(false);
             setBorder(BorderFactory.createEmptyBorder(14, 16, 18, 16));
         }
+
+        public void setFill(Color c) { fill = c; repaint(); }
 
         @Override protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();

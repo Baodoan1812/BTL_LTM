@@ -4,8 +4,11 @@ src/main/java/client/view/ChallengeDialog.java
 src/main/java/client/view/GameFrame.java
 src/main/java/client/view/LobbyFrame.java
 src/main/java/client/view/LoginFrame.java
+src/main/java/client/view/MuteButton.java
+src/main/java/client/view/Popup.java
 src/main/java/client/view/RankingFrame.java
 src/main/java/client/view/ResultDialog.java
+src/main/java/client/view/Sound.java
 src/main/java/client/view/Theme.java
 src/main/java/common/protocol/JsonCodec.java
 src/main/java/common/protocol/Message.java

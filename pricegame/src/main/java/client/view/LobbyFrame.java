@@ -64,7 +64,7 @@ public class LobbyFrame extends JFrame {
         JPanel south = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
         south.setOpaque(false);
         south.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
-        south.add(challenge); south.add(ranking); south.add(logout);
+        south.add(challenge); south.add(ranking); south.add(new MuteButton()); south.add(logout);
 
         JPanel center = new JPanel(new BorderLayout());
         center.setOpaque(false);
@@ -98,5 +98,5 @@ public class LobbyFrame extends JFrame {
         if (i >= 0) table.setRowSelectionInterval(i, i);
     }
 
-    public void info(String msg) { JOptionPane.showMessageDialog(this, msg, "Thông báo", JOptionPane.INFORMATION_MESSAGE); }
+    public void info(String msg) { Popup.info(this, "Thông báo", msg); }
 }

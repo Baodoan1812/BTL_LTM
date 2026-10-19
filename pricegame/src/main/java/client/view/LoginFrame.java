@@ -82,6 +82,6 @@ public class LoginFrame extends JFrame {
         return true;
     }
 
-    public void showError(String msg) { JOptionPane.showMessageDialog(this, msg, "Lỗi", JOptionPane.ERROR_MESSAGE); }
-    public void showInfo(String msg) { JOptionPane.showMessageDialog(this, msg, "Thông báo", JOptionPane.INFORMATION_MESSAGE); }
+    public void showError(String msg) { Popup.error(this, "Có lỗi xảy ra", msg); }
+    public void showInfo(String msg) { Popup.success(this, "Thành công", msg); }
 }

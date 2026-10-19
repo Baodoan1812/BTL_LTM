@@ -6,44 +6,29 @@ import javax.swing.*;
 import java.awt.*;
 
 /** Kết quả chung cuộc + hỏi chơi tiếp. */
-public class ResultDialog extends JDialog {
-    public ResultDialog(Frame owner, ClientController ctl, String text) {
-        super(owner, "Kết thúc trận", false);
-        String[] lines = text.split("\n", 2);
-        String head = lines[0];
-        Color headColor = head.contains("THẮNG") ? Theme.YELLOW : head.contains("THUA") ? new Color(0xFCA5A5) : Theme.ORANGE;
-        String icon = head.contains("THẮNG") ? "CHÚC MỪNG" : head.contains("THUA") ? "CỐ LÊN" : "NGANG TÀI";
-
-        Theme.GradientPanel root = new Theme.GradientPanel();
-        root.setLayout(new BorderLayout(0, 6));
-        root.setBorder(BorderFactory.createEmptyBorder(18, 30, 16, 30));
-
-        JPanel info = new JPanel(new GridLayout(4, 1, 0, 2));
-        info.setOpaque(false);
-        info.add(Theme.label(icon, Font.BOLD, 16, Color.WHITE));
-        info.add(Theme.label(head, Font.BOLD, 26, headColor));
-        info.add(Theme.label(lines.length > 1 ? lines[1] : "", Font.BOLD, 16, Color.WHITE));
-        JLabel ask = Theme.label("Bạn có muốn chơi tiếp không?", Font.PLAIN, 14, new Color(0xE9D5FF));
-        info.add(ask);
-
-        JButton again = new Theme.RoundButton("Chơi tiếp", Theme.GREEN);
-        JButton exit = new Theme.RoundButton("Thoát", Theme.RED);
-        again.addActionListener(e -> {
+public class ResultDialog extends Popup {
+    public ResultDialog(Window owner, ClientController ctl, String text) {
+        super(owner, false, kindOf(text), text.split("\n", 2)[0], buildMessage(text));
+        escapeCloses(false);
+        JButton[] btn = new JButton[2];
+        btn[0] = addButton("Chơi tiếp", Theme.GREEN, () -> {
             ctl.playAgain(true);
-            again.setEnabled(false);
-            exit.setEnabled(false);
-            ask.setText("Đang chờ đối thủ...");
+            btn[0].setEnabled(false);
+            btn[1].setEnabled(false);
+            setMessage("Đang chờ đối thủ trả lời...");
         });
-        exit.addActionListener(e -> { ctl.playAgain(false); dispose(); });
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 8));
-        btns.setOpaque(false);
-        btns.add(again); btns.add(exit);
-
-        root.add(info, BorderLayout.CENTER);
-        root.add(btns, BorderLayout.SOUTH);
-        setContentPane(root);
-        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        setSize(360, 330);
+        btn[1] = addButton("Thoát", Theme.RED, () -> { ctl.playAgain(false); dispose(); });
+        pack();
         setLocationRelativeTo(owner);
+    }
+
+    private static Kind kindOf(String text) {
+        String head = text.split("\n", 2)[0];
+        return head.contains("THẮNG") ? Kind.WIN : head.contains("THUA") ? Kind.LOSE : Kind.DRAW;
+    }
+
+    private static String buildMessage(String text) {
+        String[] lines = text.split("\n", 2);
+        return (lines.length > 1 ? lines[1] + "\n" : "") + "Bạn có muốn chơi tiếp không?";
     }
 }

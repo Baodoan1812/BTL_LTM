@@ -65,6 +65,7 @@ public class ClientController {
     public void logout() {
         conn.send(Message.of(MessageType.LOGOUT));
         conn.close();
+        Sound.stopMusic();
     }
 
     // ----- xử lý message từ server -----
@@ -79,6 +80,7 @@ public class ClientController {
                     myName = m.str("name");
                     loggedIn = true;
                     login.setVisible(false);
+                    Sound.startMusic();
                     lobby = new LobbyFrame(this, myName);
                     lobby.setVisible(true);
                 } else {
@@ -88,6 +90,7 @@ public class ClientController {
             case ONLINE_LIST -> { if (lobby != null) lobby.updateList(m.arr("players"), myName); }
             case CHALLENGE_INVITE -> {
                 closeInvite();
+                Sound.play(Sound.Effect.CHALLENGE);
                 invite = new ChallengeDialog(lobby, this, m.str("challengeId"), m.str("fromName"));
                 invite.setVisible(true);
             }
@@ -97,6 +100,7 @@ public class ClientController {
                 closeInvite();
                 closeResult();
                 opponent = m.str("opponent");
+                Sound.setInGame(true);
                 if (game == null) game = new GameFrame(this);
                 game.startMatch(myName, opponent, m.integer("rounds"));
                 game.setVisible(true);
@@ -130,6 +134,7 @@ public class ClientController {
     }
 
     private void backToLobby() {
+        Sound.setInGame(false);
         closeResult();
         if (game != null) game.setVisible(false);
         if (lobby != null) lobby.setVisible(true);
@@ -142,6 +147,7 @@ public class ClientController {
         if (!loggedIn && !login.isVisible()) return;
         boolean wasIn = loggedIn;
         loggedIn = false;
+        Sound.stopMusic();
         closeInvite();
         closeResult();
         if (game != null) game.setVisible(false);
