@@ -1,5 +1,8 @@
 package server.dao;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +20,37 @@ public class MatchDAO {
         public Integer winnerId; // null nếu hòa
         public String endReason;
         public List<RoundRecord> rounds = new ArrayList<>();
+    }
+
+    /** Các trận gần nhất của một người chơi (mới nhất trước), kèm tên đối thủ và kết quả. */
+    public JsonArray history(int userId, int limit) throws SQLException {
+        JsonArray arr = new JsonArray();
+        try (Connection c = DBConnection.get();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT m.player1_id, m.score1, m.score2, m.winner_id, m.end_reason, m.played_at, u1.username, u2.username " +
+                     "FROM match_history m JOIN users u1 ON u1.id=m.player1_id JOIN users u2 ON u2.id=m.player2_id " +
+                     "WHERE m.player1_id=? OR m.player2_id=? ORDER BY m.id DESC LIMIT ?")) {
+            ps.setInt(1, userId);
+            ps.setInt(2, userId);
+            ps.setInt(3, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    boolean first = rs.getInt(1) == userId;
+                    int winner = rs.getInt(4);
+                    boolean draw = rs.wasNull();
+                    JsonObject o = new JsonObject();
+                    o.addProperty("opponent", rs.getString(first ? 8 : 7));
+                    o.addProperty("myScore", rs.getDouble(first ? 2 : 3));
+                    o.addProperty("oppScore", rs.getDouble(first ? 3 : 2));
+                    o.addProperty("result", draw ? "Hòa" : winner == userId ? "Thắng" : "Thua");
+                    o.addProperty("endReason", rs.getString(5));
+                    Timestamp t = rs.getTimestamp(6);
+                    o.addProperty("time", t == null ? "" : t.toString().substring(0, 16));
+                    arr.add(o);
+                }
+            }
+        }
+        return arr;
     }
 
     /** Lưu trận + các lượt + cập nhật điểm tổng của 2 người chơi trong một transaction. */

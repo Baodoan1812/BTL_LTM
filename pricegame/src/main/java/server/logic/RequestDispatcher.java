@@ -36,6 +36,15 @@ public class RequestDispatcher {
                     System.err.println("Ranking: " + e);
                 }
             }
+            case HISTORY_REQ -> {
+                try {
+                    int uid = m.integer("userId");
+                    p.send(Message.of(MessageType.HISTORY_RES).put("userId", uid)
+                            .put("name", m.str("name")).put("history", ctx.matchDAO.history(uid, 50)));
+                } catch (Exception e) {
+                    System.err.println("History: " + e);
+                }
+            }
             default -> { }
         }
     }

@@ -18,6 +18,7 @@ public class ServerContext {
     public final MatchSaver matches;
     public final UserDAO userDAO = new UserDAO();
     public final RankingDAO rankingDAO = new RankingDAO();
+    public final MatchDAO matchDAO = new MatchDAO();
 
     /** Thời gian mỗi lượt (giây) và nghỉ giữa các lượt (ms); cho phép chỉnh khi test. */
     public int timeLimitSec = 15;

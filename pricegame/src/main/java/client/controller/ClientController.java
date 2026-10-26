@@ -62,6 +62,10 @@ public class ClientController {
 
     public void requestRanking() { conn.send(Message.of(MessageType.RANKING_REQ)); }
 
+    public void requestHistory(int userId, String name) {
+        conn.send(Message.of(MessageType.HISTORY_REQ).put("userId", userId).put("name", name));
+    }
+
     public void logout() {
         conn.send(Message.of(MessageType.LOGOUT));
         conn.close();
@@ -126,9 +130,10 @@ public class ClientController {
                 backToLobby();
             }
             case RANKING_RES -> {
-                if (ranking == null) ranking = new RankingFrame();
+                if (ranking == null) ranking = new RankingFrame(this);
                 ranking.show(m.arr("ranking"));
             }
+            case HISTORY_RES -> new HistoryDialog(ranking, m.str("name"), m.arr("history")).setVisible(true);
             default -> { }
         }
     }

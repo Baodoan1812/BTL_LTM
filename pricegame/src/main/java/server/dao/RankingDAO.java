@@ -10,7 +10,7 @@ public class RankingDAO {
         JsonArray arr = new JsonArray();
         try (Connection c = DBConnection.get();
              PreparedStatement ps = c.prepareStatement(
-                     "SELECT username, total_score, total_wins FROM users ORDER BY total_score DESC, total_wins DESC LIMIT ?")) {
+                     "SELECT username, total_score, total_wins, id FROM users ORDER BY total_score DESC, total_wins DESC LIMIT ?")) {
             ps.setInt(1, limit);
             try (ResultSet rs = ps.executeQuery()) {
                 int rank = 1;
@@ -20,6 +20,7 @@ public class RankingDAO {
                     o.addProperty("name", rs.getString(1));
                     o.addProperty("score", rs.getDouble(2));
                     o.addProperty("wins", rs.getInt(3));
+                    o.addProperty("id", rs.getInt(4));
                     arr.add(o);
                 }
             }
