@@ -14,6 +14,8 @@ import java.text.DecimalFormat;
 
 public class GameFrame extends JFrame {
     private static final DecimalFormat MONEY = new DecimalFormat("#,###");
+    private static final String SUFFIX = "000";
+    private static final int MAX_TYPED_DIGITS = 12; // 12 chữ số + "000" = 15, vừa giới hạn của submit
     private static final Color PANEL_GLASS = new Color(255, 255, 255, 34);
     private static final Color SOFT_WHITE = new Color(0xE9D5FF);
 
@@ -187,7 +189,9 @@ public class GameFrame extends JFrame {
     private final JLabel resultTitle = Theme.label(" ", Font.BOLD, 16, Theme.PURPLE);
     private final JLabel resultPrice = Theme.label(" ", Font.BOLD, 22, Theme.TEXT);
     private final JLabel resultDetail = Theme.label(" ", Font.PLAIN, 13, Theme.MUTED);
+    private final JLabel resultDetail2 = Theme.label(" ", Font.PLAIN, 13, Theme.MUTED);
     private final Timer countdown;
+    private boolean resettingInput;
 
     private String me = "", opponent = "";
     private int totalRounds = 5, timeLimit = 15, remaining, currentRound;
@@ -225,10 +229,36 @@ public class GameFrame extends JFrame {
         Theme.styleField(input);
         input.setFont(Theme.font(Font.BOLD, 20));
         input.setHorizontalAlignment(SwingConstants.RIGHT);
+        // Ô luôn kết thúc bằng "000" cố định: gõ 50 -> 50000. Chỉ cho gõ/xóa phần trước đuôi đó.
+        ((javax.swing.text.AbstractDocument) input.getDocument()).setDocumentFilter(new javax.swing.text.DocumentFilter() {
+            @Override public void insertString(FilterBypass fb, int off, String s, javax.swing.text.AttributeSet a)
+                    throws javax.swing.text.BadLocationException { replace(fb, off, 0, s, a); }
+
+            @Override public void remove(FilterBypass fb, int off, int len) throws javax.swing.text.BadLocationException {
+                replace(fb, off, len, "", null);
+            }
+
+            @Override public void replace(FilterBypass fb, int off, int len, String s, javax.swing.text.AttributeSet a)
+                    throws javax.swing.text.BadLocationException {
+                if (resettingInput) { super.replace(fb, off, len, s, a); return; }
+                int editable = fb.getDocument().getLength() - SUFFIX.length();
+                off = Math.min(off, editable);
+                len = Math.min(len, editable - off);
+                String digits = s == null ? "" : s.replaceAll("[^0-9]", "");
+                if (editable - len + digits.length() > MAX_TYPED_DIGITS) return;
+                super.replace(fb, off, len, digits, a);
+            }
+        });
+        input.addCaretListener(e -> {
+            int editable = input.getText().length() - SUFFIX.length();
+            if (!resettingInput && (input.getCaretPosition() > editable || input.getSelectionEnd() > editable))
+                SwingUtilities.invokeLater(() -> input.setCaretPosition(Math.max(0, input.getText().length() - SUFFIX.length())));
+        });
         input.getDocument().addDocumentListener(new DocumentListener() {
             void update() {
                 String d = input.getText().replaceAll("[^0-9]", "");
-                hint.setText(d.isEmpty() || d.length() > 15 ? " " : "= " + MONEY.format(Long.parseLong(d)) + " đ");
+                boolean show = !d.isEmpty() && d.length() <= 15 && Long.parseLong(d) > 0;
+                hint.setText(show ? "= " + MONEY.format(Long.parseLong(d)) + " đ" : " ");
             }
             @Override public void insertUpdate(DocumentEvent e) { update(); }
             @Override public void removeUpdate(DocumentEvent e) { update(); }
@@ -281,11 +311,12 @@ public class GameFrame extends JFrame {
         product.add(guessRow);
 
         // --- thẻ kết quả lượt ---
-        resultCard.setLayout(new GridLayout(3, 1, 0, 2));
+        resultCard.setLayout(new GridLayout(4, 1, 0, 2));
         resultCard.setBorder(BorderFactory.createEmptyBorder(10, 14, 16, 14));
         resultCard.add(resultTitle);
         resultCard.add(resultPrice);
         resultCard.add(resultDetail);
+        resultCard.add(resultDetail2);
 
         JPanel center = new JPanel(new BorderLayout(0, 10));
         center.setOpaque(false);
@@ -341,6 +372,18 @@ public class GameFrame extends JFrame {
         resultPrice.setForeground(Theme.TEXT);
         resultPrice.setFont(Theme.font(Font.PLAIN, 14));
         resultDetail.setText(" ");
+        resultDetail2.setText(" ");
+    }
+
+    /** Đặt lại ô nhập về "000", con trỏ đứng trước đuôi. */
+    private void resetInput() {
+        resettingInput = true;
+        try {
+            input.setText(SUFFIX);
+            input.setCaretPosition(0);
+        } finally {
+            resettingInput = false;
+        }
     }
 
     private void setInputEnabled(boolean on) {
@@ -361,7 +404,7 @@ public class GameFrame extends JFrame {
         name.setText(" ");
         desc.setText(" ");
         image.setImage(null);
-        input.setText("");
+        resetInput();
         ring.set(0, timeLimit, false);
         setInputEnabled(false);
         showMessage("Trận đấu bắt đầu!", me + " vs " + opponent, Theme.PURPLE, Color.WHITE);
@@ -378,9 +421,9 @@ public class GameFrame extends JFrame {
         remaining = timeLimit;
         ring.set(remaining, timeLimit, true);
         countdown.restart();
-        input.setText("");
+        resetInput();
         oppCard.setNote("Đang suy nghĩ...", SOFT_WHITE);
-        showMessage("Hãy đoán giá sản phẩm!", "Gần giá thật nhất sẽ được +1 điểm", Theme.PURPLE, Color.WHITE);
+        showMessage("Hãy đoán giá sản phẩm!", "Đoán cao hơn giá thật là thua; cùng thấp hơn thì ai chênh ít hơn thắng", Theme.PURPLE, Color.WHITE);
         setInputEnabled(true);
     }
 
@@ -429,11 +472,18 @@ public class GameFrame extends JFrame {
         resultPrice.setText("Giá thật: " + MONEY.format(m.num("actual")) + " đ");
         resultPrice.setFont(Theme.font(Font.BOLD, 22));
         resultPrice.setForeground(Theme.TEXT);
-        resultDetail.setText("Bạn: " + guessText(m, first ? "g1" : "g2") + "   |   " + opponent + ": " + guessText(m, first ? "g2" : "g1"));
+        double actual = m.num("actual");
+        resultDetail.setText("Bạn: " + guessText(m, first ? "g1" : "g2", actual));
+        resultDetail2.setText(opponent + ": " + guessText(m, first ? "g2" : "g1", actual));
     }
 
-    private static String guessText(Message m, String key) {
-        return m.has(key) ? MONEY.format(m.num(key)) + " đ" : "(bỏ lượt)";
+    /** Giá đã đoán kèm độ chênh so với giá thật (thấp hơn / cao hơn). */
+    private static String guessText(Message m, String key, double actual) {
+        if (!m.has(key)) return "hết giờ, không gửi giá (thua lượt)";
+        double g = m.num(key);
+        String diff = g == actual ? "đúng giá thật"
+                : "chênh " + MONEY.format(Math.abs(g - actual)) + " đ (" + (g > actual ? "cao hơn" : "thấp hơn") + ")";
+        return MONEY.format(g) + " đ, " + diff;
     }
 
     private static String fmt(double d) { return d == Math.floor(d) ? String.valueOf((int) d) : String.valueOf(d); }
